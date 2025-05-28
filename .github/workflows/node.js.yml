@@ -5,9 +5,13 @@ name: Node.js CI
 
 on:
   push:
+<<<<<<< HEAD
     branches: ["main"]
+=======
+    branches: [ "main" ]
+>>>>>>> refs/remotes/origin/main
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   build:
