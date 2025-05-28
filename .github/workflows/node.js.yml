@@ -5,13 +5,9 @@ name: Node.js CI
 
 on:
   push:
-<<<<<<< HEAD
     branches: ["main"]
-=======
-    branches: [ "main" ]
->>>>>>> refs/remotes/origin/main
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -19,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [18.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
