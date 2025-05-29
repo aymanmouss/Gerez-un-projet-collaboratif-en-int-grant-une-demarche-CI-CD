@@ -1,13 +1,12 @@
-# Workflow dédié aux tests Frontend (Angular)
 name: Frontend Tests
 
 on:
   push:
     branches: ["main"]
-    paths: ["front/**"] # Se déclenche seulement si le frontend change
+    # paths: ["front/**"] # Se déclenche seulement si le frontend change
   pull_request:
     branches: ["main"]
-    paths: ["front/**"]
+    # paths: ["front/**"]
 
 jobs:
   test-frontend:
