@@ -4,10 +4,8 @@ name: Frontend Tests
 on:
   push:
     branches: ["main"]
-    paths: ["front/**"] # Se déclenche seulement si le frontend change
   pull_request:
     branches: ["main"]
-    paths: ["front/**"]
 
 jobs:
   test-frontend:
