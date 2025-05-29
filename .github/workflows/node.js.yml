@@ -1,42 +1,50 @@
-name: Frontend tests (Tests)
+# Workflow dédié aux tests Frontend (Angular)
+name: Frontend Tests
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
+    paths: ["front/**"] # Se déclenche seulement si le frontend change
   pull_request:
-    branches:
-      - main
+    branches: ["main"]
+    paths: ["front/**"]
 
 jobs:
-  Frontend-test:
+  test-frontend:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: front
 
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Node.js ${{matrix.node-version}}
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: ${{matrix.node-version}}
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: front/package-lock.json
 
-      - name: Run npm install
-        run: npm install
+      - name: Install dependencies
+        run: |
+          cd front
+          npm ci
 
-      - name: Run npm test
-        run: npm run test:prod
+      - name: Build frontend
+        run: |
+          cd front
+          npm run build --if-present
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4.6.2
+      - name: Run tests with coverage
+        run: |
+          cd front
+          npm test -- --watch=false --browsers=ChromeHeadless --code-coverage
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
         with:
-          name: karma-report
-          path: front/coverage
+          name: frontend-coverage
+          path: front/coverage/
