@@ -1,30 +1,27 @@
 name: Build
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
-  sonarqube:
-    name: SonarQube
+  frontend:
+    name: Frontend Build & SonarQube
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: front
-    strategy:
-      matrix:
-        node-version: [18.x]
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "18.x"
           cache: "npm"
           cache-dependency-path: front/package-lock.json
 
@@ -37,13 +34,10 @@ jobs:
       - name: Run tests with coverage
         run: npm run test -- --code-coverage --watch=false --browsers=ChromeHeadless
 
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage
-          path: front/coverage
-
-      - name: SonarQube Scan
+      - name: SonarQube Scan Frontend
         uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: front
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
