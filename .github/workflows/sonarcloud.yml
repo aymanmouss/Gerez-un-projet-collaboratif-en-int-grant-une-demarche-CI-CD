@@ -1,0 +1,100 @@
+name: SonarCloud Analysis
+on:
+  workflow_run:
+    workflows: ["Tests & Coverage"]
+    types: [completed]
+    branches: [main]
+  # Pour les PR, on déclenche directement
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  sonar-frontend:
+    name: SonarCloud Frontend
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' }}
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Download des artifacts de coverage du workflow précédent
+      - name: Download frontend coverage
+        if: github.event_name != 'pull_request'
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: front/coverage
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      # Pour les PR, on refait les tests
+      - name: Setup Node.js (for PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: "npm"
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install and test (for PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          npm ci
+          npm run test -- --code-coverage --watch=false --browsers=ChromeHeadless
+
+      - name: SonarCloud Scan Frontend
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: front
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  sonar-backend:
+    name: SonarCloud Backend
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' }}
+    defaults:
+      run:
+        working-directory: back
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Download des artifacts de coverage du workflow précédent
+      - name: Download backend coverage
+        if: github.event_name != 'pull_request'
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: back/target/site/jacoco
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      # Pour les PR, on refait les tests
+      - name: Set up JDK 11 (for PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-java@v4
+        with:
+          java-version: "11"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build and test (for PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          mvn -B package --file pom.xml
+          mvn test jacoco:report
+
+      - name: SonarCloud Scan Backend
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: back
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
