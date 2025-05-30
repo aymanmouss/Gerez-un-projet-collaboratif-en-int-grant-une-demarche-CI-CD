@@ -4,7 +4,7 @@ on:
     workflows: ["Tests & Coverage"]
     types: [completed]
     branches: [main]
-
+  # Pour les PR, on déclenche directement
   pull_request:
     branches: ["main"]
 
@@ -41,6 +41,7 @@ jobs:
           cache-dependency-path: front/package-lock.json
 
       - name: Install and test (for PR)
+        if: github.event_name == 'pull_request'
         run: |
           npm ci
           npm run test -- --code-coverage --watch=false --browsers=ChromeHeadless
