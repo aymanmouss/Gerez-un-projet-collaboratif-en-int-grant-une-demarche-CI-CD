@@ -6,41 +6,41 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  # frontend:
-  #   name: Frontend Build & SonarQube
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: front
+  frontend:
+    name: Frontend Build & SonarQube
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
 
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "18.x"
-  #         cache: "npm"
-  #         cache-dependency-path: front/package-lock.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.x"
+          cache: "npm"
+          cache-dependency-path: front/package-lock.json
 
-  #     - name: Install dependencies
-  #       run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-  #     - name: Build frontend
-  #       run: npm run build --if-present
+      - name: Build frontend
+        run: npm run build --if-present
 
-  #     - name: Run tests with coverage
-  #       run: npm run test -- --code-coverage --watch=false --browsers=ChromeHeadless
+      - name: Run tests with coverage
+        run: npm run test -- --code-coverage --watch=false --browsers=ChromeHeadless
 
-  #     - name: SonarQube Scan Frontend
-  #       uses: SonarSource/sonarqube-scan-action@v5
-  #       with:
-  #         projectBaseDir: front
-  #       env:
-  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: SonarQube Scan Frontend
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: front
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   backend:
     name: Backend Build & SonarQube
@@ -53,10 +53,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Set up JDK 17
+      - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: "17"
+          java-version: "11"
           distribution: "temurin"
           cache: maven
 
