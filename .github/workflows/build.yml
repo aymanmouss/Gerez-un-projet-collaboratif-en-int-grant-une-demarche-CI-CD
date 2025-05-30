@@ -73,9 +73,7 @@ jobs:
           path: back/target/site/jacoco
 
       - name: SonarQube Scan Backend
-        uses: SonarSource/sonarcloud-github-action@4006f663ecaf1f8093e8e4abb9227f6041f52216
-        with:
-          projectBaseDir: back
+        uses: SonarSource/sonarqube-scan-action
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
