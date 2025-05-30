@@ -73,6 +73,6 @@ jobs:
           path: back/target/site/jacoco
 
       - name: SonarQube Scan via Maven
-        run: mvn sonar:sonar
+        run: mvn sonar:sonar -Dsonar.host.url=https://sonarcloud.io
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
