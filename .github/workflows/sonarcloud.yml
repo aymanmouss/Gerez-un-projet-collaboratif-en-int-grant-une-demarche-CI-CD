@@ -33,7 +33,7 @@ jobs:
 
       # Pour les PR, on refait les tests
       - name: Setup Node.js (for PR)
-        if: github.event_name == 'pull_request'
+
         uses: actions/setup-node@v4
         with:
           node-version: "18.x"
