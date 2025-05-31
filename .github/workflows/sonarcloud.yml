@@ -1,27 +1,22 @@
 name: SonarCloud Analysis
 on:
-  workflow_run:
-    workflows: ["Tests & Coverage"]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
   pull_request:
-    branches: ["main"]
-  workflow_dispatch: # Pour tests manuels
+    types: [opened, synchronize, reopened]
 
 jobs:
-  sonar-frontend:
-    name: SonarCloud Frontend
+  sonarcloud-analyze:
+    name: Full build and analyze
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
-    defaults:
-      run:
-        working-directory: front
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
-      # TOUJOURS faire les tests (comme le backend)
+      # Frontend tests first
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,44 +24,15 @@ jobs:
           cache: "npm"
           cache-dependency-path: front/package-lock.json
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
+        working-directory: front
         run: npm ci
 
-      - name: Build frontend
-        run: npm run build --if-present
+      - name: Run frontend tests and generate coverage report
+        working-directory: front
+        run: npm test -- --watch=false --browsers=ChromeHeadless --code-coverage
 
-      - name: Run tests with coverage
-        run: npx ng test --code-coverage --coverage-reporters=lcov --watch=false --browsers=ChromeHeadless
-
-      # Debug optionnel (tu peux l'enlever plus tard)
-      - name: Debug coverage files
-        run: |
-          echo "=== Coverage directory content ==="
-          ls -la coverage/ || echo "No coverage directory"
-          echo "=== LCOV file exists? ==="
-          test -f coverage/lcov.info && echo "✅ lcov.info found" || echo "❌ lcov.info NOT found"
-
-      - name: SonarCloud Scan Frontend
-        uses: SonarSource/sonarcloud-github-action@master
-        with:
-          projectBaseDir: front
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-  sonar-backend:
-    name: SonarCloud Backend
-    runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
-    defaults:
-      run:
-        working-directory: back
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+      # Backend tests
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
@@ -74,16 +40,25 @@ jobs:
           distribution: "temurin"
           cache: maven
 
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
+      - name: Build and test backend
+        working-directory: back
+        run: |
+          mvn -B package --file pom.xml
+          mvn test jacoco:report
 
-      - name: Run tests with coverage
-        run: mvn test jacoco:report
+      # Debug coverage (optionnel)
+      - name: Debug coverage files
+        run: |
+          echo "=== Frontend coverage ==="
+          find front/coverage -name "*.info" 2>/dev/null || echo "No frontend lcov files"
+          echo "=== Backend coverage ==="
+          find back/target -name "jacoco.xml" 2>/dev/null || echo "No backend jacoco files"
 
-      - name: SonarCloud Scan Backend
+      # SonarCloud scan pour TOUT le projet
+      - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
-        with:
-          projectBaseDir: back
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
