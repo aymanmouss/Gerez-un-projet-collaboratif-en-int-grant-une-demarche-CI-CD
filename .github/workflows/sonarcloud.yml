@@ -4,7 +4,6 @@ on:
     workflows: ["Tests & Coverage"]
     types: [completed]
     branches: [main]
-
   pull_request:
     branches: ["main"]
 
@@ -21,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Download des artifacts de coverage du workflow précédent
+      # Download coverage artifacts from previous workflow (for main branch)
       - name: Download frontend coverage
         if: github.event_name != 'pull_request'
         uses: actions/download-artifact@v4
@@ -31,9 +30,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      # Pour les PR, on refait les tests
+      # For PR, run tests to generate coverage
       - name: Setup Node.js (for PR)
-
+        if: github.event_name == 'pull_request'
         uses: actions/setup-node@v4
         with:
           node-version: "18.x"
@@ -41,6 +40,7 @@ jobs:
           cache-dependency-path: front/package-lock.json
 
       - name: Install and test (for PR)
+        if: github.event_name == 'pull_request'
         run: |
           npm ci
           npm run test -- --code-coverage --watch=false --browsers=ChromeHeadless
@@ -54,39 +54,46 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   sonar-backend:
-    name: SonarQube Backend
+    name: SonarCloud Backend
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' }}
     defaults:
       run:
         working-directory: back
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Set up JDK 11
+
+      # Download coverage artifacts from previous workflow (for main branch)
+      - name: Download backend coverage
+        if: github.event_name != 'pull_request'
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: back/target/site/jacoco
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      # For PR, run tests to generate coverage
+      - name: Set up JDK 11 (for PR)
+        if: github.event_name == 'pull_request'
         uses: actions/setup-java@v4
         with:
           java-version: "11"
           distribution: "temurin"
           cache: maven
 
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
+      - name: Build and test (for PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          mvn -B package --file pom.xml
+          mvn test jacoco:report
 
-      - name: Run tests with coverage
-        run: mvn test jacoco:report
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage
-          path: back/target/site/jacoco
-
-      - name: SonarQube Scan Backend
-        uses: SonarSource/sonarqube-scan-action@v5
+      - name: SonarCloud Scan Backend
+        uses: SonarSource/sonarcloud-github-action@master
         with:
           projectBaseDir: back
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
