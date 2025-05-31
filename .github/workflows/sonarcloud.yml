@@ -36,7 +36,7 @@ jobs:
         run: npm run build --if-present
 
       - name: Run tests with coverage
-        run: npm run test -- --code-coverage --watch=false --browsers=ChromeHeadless
+        run: npx ng test --code-coverage --coverage-reporters=lcov --watch=false --browsers=ChromeHeadless
 
       # Debug optionnel (tu peux l'enlever plus tard)
       - name: Debug coverage files
